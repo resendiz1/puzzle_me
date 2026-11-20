@@ -25,7 +25,7 @@
   let data = loadData(), image = null, imageUrl = "", imageData = "", pieces = [];
   let rows=4, cols=4, total=16, selected=null, dragging=null, hintPiece=null;
   let elapsed=0, startedAt=0, timerInterval=null, soundOn=true, zoom=1, completed=false, gameActive=false;
-  let canvas,ctx,board={x:0,y:0,w:0,h:0};
+  let canvas,ctx,board={x:0,y:0,w:0,h:0},tray={x:0,y:0,w:0,h:0},trayMode="bottom";
   let audioCtx=null, toastTimer=null, lastFocus=null, lastSaveAt=0, lastSaveError=0, resuming=false, autoResumeDone=false;
   let molds=null, moldCtx=null, animating=false, palette=null, themeQuery=null;
 
@@ -185,7 +185,7 @@
       if(target)setTimeout(()=>target.focus(),0);
     }else if(lastFocus){lastFocus.focus();lastFocus=null;}
   }
-  function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");}
+  function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.body.classList.toggle("in-game",id==="gameScreen");}
   function profileUI(){const p=data.profile;const wins=data.wins||data.records.length;$("profileName").textContent=p.name;$("profileNameSmall").textContent=p.name;$("avatarSmall").textContent=p.avatar;$("avatarLarge").textContent=p.avatar;$("statWins").textContent=wins;$("profileStats").textContent=`${wins} puzzles completados`;$("statTime").textContent=data.records.length?fmt(Math.min(...data.records.map(r=>r.time))):"—";renderRecords();}
   function renderRecords(){const sorted=[...data.records].sort((a,b)=>a.time-b.time);const make=(r)=>`<div class="record-row"><div><strong>${escapeHtml(r.title||"Rompecabezas")}</strong><small>${r.pieces} piezas · ${new Date(r.date).toLocaleDateString("es-MX")}</small></div><span class="record-time">${fmt(r.time)}</span></div>`;$("recentRecords").innerHTML=sorted.slice(0,3).map(make).join("")||'<div class="empty-state">Tus mejores partidas aparecerán aquí.</div>';$("allRecordsList").innerHTML=sorted.map(make).join("")||'<div class="empty-state">Aún no tienes récords.</div>';}
   function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -234,15 +234,34 @@
   function layoutBoard(){
     const w=$("canvasWrap").clientWidth,h=$("canvasWrap").clientHeight;
     const ar=image?image.width/image.height:1;
-    const compact=w<720;
-    let bw=w*(compact?.66:.72),bh=bw/ar;
-    const maxH=h*(compact?.82:.88);
-    if(bh>maxH){bh=maxH;bw=bh*ar;}
-    bw*=zoom;bh*=zoom;
-    const capW=w*.94,capH=h*.95;
-    if(bw>capW){const f=capW/bw;bw*=f;bh*=f;}
-    if(bh>capH){const f=capH/bh;bw*=f;bh*=f;}
-    board={x:(w-bw)/2,y:compact?Math.max(8,(h-bh)*.12):(h-bh)/2,w:bw,h:bh};
+    const compact=w<720,gap=12,pad=8;
+    const fit=(areaW,areaH)=>{
+      areaW=Math.max(80,areaW);areaH=Math.max(80,areaH);
+      let bw=Math.min(areaW,areaH*ar)*zoom,bh=bw/ar;
+      if(bw>areaW){const f=areaW/bw;bw*=f;bh*=f;}
+      if(bh>areaH){const f=areaH/bh;bw*=f;bh*=f;}
+      return {w:bw,h:bh};
+    };
+    const trayW=Math.max(180,Math.min(260,w*.22));
+    const trayH=Math.max(150,Math.min(220,h*.24));
+    const rightArea={x:pad,y:pad,w:w-pad*2-gap-trayW,h:h-pad*2};
+    const bottomArea={x:pad,y:pad,w:w-pad*2,h:h-pad*2-gap-trayH};
+    const rightBoard=fit(rightArea.w,rightArea.h);
+    const bottomBoard=fit(bottomArea.w,bottomArea.h);
+    const useBottom=compact||bottomBoard.w>rightBoard.w*1.12;
+    const area=useBottom?bottomArea:rightArea;
+    const size=useBottom?bottomBoard:rightBoard;
+    if(useBottom){
+      trayMode="bottom";
+      tray={x:pad,y:h-pad-trayH,w:w-pad*2,h:trayH};
+    }else{
+      trayMode="right";
+      tray={x:w-pad-trayW,y:pad,w:trayW,h:h-pad*2};
+    }
+    board={x:area.x+(area.w-size.w)/2,y:area.y+(area.h-size.h)/2,w:size.w,h:size.h};
+    const wrap=$("canvasWrap");
+    wrap.dataset.tray=trayMode;
+    wrap.style.setProperty("--tray-h",`${tray.h}px`);
   }
   function randEdge(){return Math.random()>.5?1:-1;}
   function shufflePieces(){
@@ -344,37 +363,34 @@
     }
     const remaining=pieces.filter(p=>!p.placed);
     if(!remaining.length){buildMolds();return;}
-    const rightGap=w-board.x-board.w,leftGap=board.x;
-    const rightW=Math.max(80,rightGap-20),leftW=Math.max(80,leftGap-20);
-    const rightX=board.x+board.w+10,leftX=10;
-    const bottomY=board.y+board.h+12,bottomH=h-bottomY-10;
-    const useRight=rightW>=100&&rightX+rightW<=w-5;
-    const useLeft=!useRight&&leftW>=100;
-    const useBottom=!useRight&&!useLeft&&bottomH>=100;
-    const areaX=useRight?rightX:useBottom?8:leftX;
-    const areaY=useBottom?bottomY:10;
-    const areaW=useRight?rightW:useBottom?w-16:leftW;
-    const areaH=useBottom?bottomH:h-20;
+    const areaX=tray.x,areaY=tray.y,areaW=tray.w,areaH=tray.h;
     const aspect=remaining[0].srcH/remaining[0].srcW;
-    let cellW=Math.max(24,Math.min(70,areaW/Math.max(1,Math.ceil(Math.sqrt(remaining.length)))));
+    let cellW=Math.max(24,Math.min(96,areaW/Math.max(1,Math.ceil(Math.sqrt(remaining.length)))));
     let cellH=cellW*aspect;
     let margin=TAB_MARGIN*Math.min(cellW,cellH);
     let colsTray=Math.max(1,Math.floor(areaW/(cellW+2*margin+4)));
     let rowsTray=Math.max(1,Math.floor(areaH/(cellH+2*margin+5)));
-    while(Math.ceil(remaining.length/colsTray)>rowsTray&&cellW>10){
+    while(Math.ceil(remaining.length/colsTray)>rowsTray&&cellW>8){
       cellW*=.9;cellH=cellW*aspect;margin=TAB_MARGIN*Math.min(cellW,cellH);
       colsTray=Math.max(1,Math.floor(areaW/(cellW+2*margin+4)));
       rowsTray=Math.max(1,Math.floor(areaH/(cellH+2*margin+5)));
     }
     const stepX=cellW+2*margin+4,stepY=cellH+2*margin+5;
+    const blockW=Math.min(colsTray,remaining.length)*stepX;
+    const blockH=Math.ceil(remaining.length/colsTray)*stepY;
+    const originX=areaX+Math.max(0,(areaW-blockW)/2);
+    const originY=areaY+Math.max(0,(areaH-blockH)/2);
     remaining.forEach((p,i)=>{
       p.w=cellW;p.h=cellH;p.margin=margin;
       if(p.preserveXY){
         p.x=Math.max(0,Math.min(w-p.w,p.x));
         p.y=Math.max(0,Math.min(h-p.h,p.y));
       }else{
-        p.x=areaX+margin+(i%colsTray)*stepX;
-        p.y=areaY+margin+(Math.floor(i/colsTray)%rowsTray)*stepY;
+        const row=Math.floor(i/colsTray);
+        const inRow=Math.min(colsTray,remaining.length-row*colsTray);
+        const rowOffset=(blockW-inRow*stepX)/2;
+        p.x=originX+rowOffset+(i%colsTray)*stepX;
+        p.y=originY+row*stepY;
       }
       const shape=buildPiecePath(p,cellW,cellH);
       p.hitPath=shape.path;p.hitMargin=shape.margin;
@@ -683,6 +699,7 @@
     document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>modal(b.closest(".modal-backdrop").id,false)));
     document.querySelectorAll(".modal-backdrop").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)modal(m.id,false)}));
     $("previewBtn").addEventListener("click",()=>modal("previewModal"));
+    $("miniPreview").addEventListener("click",()=>modal("previewModal"));
     $("hintBtn").addEventListener("click",hint);
     $("rotateBtn").addEventListener("click",rotateSelected);
     $("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=`Sonido: ${soundOn?"sí":"no"}`;$("soundBtn").setAttribute("aria-pressed",String(soundOn));});
