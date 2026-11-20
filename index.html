@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0B0D0E">
+  <meta name="description" content="PuzzleMe: convierte tus fotografías en rompecabezas personalizados. Tus fotos y tu avance se quedan en tu navegador.">
+  <title>PuzzleMe — Rompecabezas por JuanPancho's</title>
+  <script>
+    (() => {
+      try {
+        const saved = localStorage.getItem("puzzleme.theme");
+        const theme = saved === "light" || saved === "dark"
+          ? saved
+          : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.dataset.theme = theme;
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === "light" ? "#F4EEE1" : "#0B0D0E";
+      } catch {
+        document.documentElement.dataset.theme = "dark";
+      }
+    })();
+  </script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="PuzzleMe inicio">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M16 16h12v4a4 4 0 1 0 8 0v-4h8a4 4 0 0 1 4 4v8h-4a4 4 0 1 0 0 8h4v8a4 4 0 0 1-4 4h-8v-4a4 4 0 1 0-8 0v4H16a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-name">PuzzleMe</span>
+      </a>
+      <div class="top-actions">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar a modo claro" aria-pressed="false" title="Cambiar tema">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5z"/>
+          </svg>
+          <span class="theme-label">Claro</span>
+        </button>
+        <button class="profile-chip" id="profileOpen" type="button" aria-label="Abrir perfil">
+          <span class="avatar" id="avatarSmall">P</span>
+          <span class="profile-name" id="profileNameSmall">Player</span>
+          <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen active" id="homeScreen">
+        <div class="hero">
+          <h1>Una pieza a la vez.<br><span>Desconecta y disfruta.</span></h1>
+          <p class="hero-copy">Convierte tus fotografías favoritas en rompecabezas y arma cada pieza a tu ritmo.</p>
+          <p class="mono-note"><span class="lamp" aria-hidden="true"></span>Tus fotos se quedan en tu navegador</p>
+        </div>
+
+        <div class="home-grid">
+          <section class="panel setup-panel">
+            <div class="section-heading">
+              <h2>Prepara tu puzzle</h2>
+              <span class="step-pill">Nueva partida</span>
+            </div>
+            <label class="upload-zone" for="imageInput" id="uploadZone">
+              <input type="file" id="imageInput" accept="image/*">
+              <span class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+              </span>
+              <strong id="uploadTitle">Sube una fotografía</strong>
+              <span id="uploadHint">JPG, PNG o WEBP · Máximo recomendado 5 MB</span>
+              <img id="uploadThumb" alt="Vista previa de la imagen seleccionada" hidden>
+            </label>
+            <div class="field-row">
+              <div class="field">
+                <label for="difficulty">Dificultad</label>
+                <select id="difficulty">
+                  <option value="all">Todas las dificultades</option>
+                  <option value="easy">Fácil · 4 a 16 piezas</option>
+                  <option value="medium">Media · 25 a 64 piezas</option>
+                  <option value="hard">Difícil · 100 a 144 piezas</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="pieceCount">Número de piezas</label>
+                <select id="pieceCount">
+                  <option value="4">4 piezas</option><option value="9">9 piezas</option>
+                  <option value="16" selected>16 piezas</option><option value="25">25 piezas</option>
+                  <option value="36">36 piezas</option><option value="64">64 piezas</option>
+                  <option value="100">100 piezas</option><option value="144">144 piezas</option>
+                </select>
+              </div>
+            </div>
+            <button class="primary-btn full" id="startBtn" disabled>Crear rompecabezas <span aria-hidden="true">→</span></button>
+            <button class="text-btn full" id="resumeBtn" hidden>Reanudar partida guardada</button>
+          </section>
+
+          <aside class="side-stack">
+            <section class="panel profile-panel">
+              <div class="section-heading">
+                <h3>Jugador</h3>
+                <button class="icon-btn" id="editProfile" aria-label="Editar perfil" title="Editar perfil">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4z"/></svg>
+                </button>
+              </div>
+              <div class="profile-card"><div class="avatar big" id="avatarLarge">P</div><div><strong id="profileName">Player</strong><span id="profileStats">0 puzzles completados</span></div></div>
+              <div class="stat-strip"><div><strong id="statWins">0</strong><span>Completados</span></div><div><strong id="statTime">—</strong><span>Mejor tiempo</span></div></div>
+            </section>
+            <section class="panel records-panel">
+              <div class="section-heading">
+                <h3>Récords recientes</h3>
+                <button class="text-btn compact" id="allRecords">Ver todos</button>
+              </div>
+              <div id="recentRecords" class="record-list"><div class="empty-state">Tus mejores partidas aparecerán aquí.</div></div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="screen" id="gameScreen">
+        <div class="game-heading">
+          <div>
+            <button class="back-btn" id="backHome">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+              Volver
+            </button>
+            <h1 id="gameTitle">Tu rompecabezas</h1>
+            <p id="gameSubtitle">16 piezas · Fácil</p>
+          </div>
+          <div class="timer-box"><span>Tiempo</span><strong id="timer" aria-live="off">00:00</strong></div>
+        </div>
+        <div class="game-layout">
+          <section class="board-panel panel">
+            <div class="board-toolbar">
+              <div class="board-status"><span class="live-dot"></span><span id="progressText" role="status" aria-live="polite">0 / 16 piezas</span></div>
+              <div class="board-actions">
+                <button class="tool-btn" id="previewBtn" title="Ver imagen completa">Vista previa</button>
+                <button class="tool-btn" id="hintBtn" title="Mostrar una pista">Pista</button>
+                <button class="tool-btn" id="rotateBtn" title="Girar pieza seleccionada">Girar</button>
+                <button class="tool-btn" id="soundBtn" aria-pressed="true" title="Activar o desactivar sonido">Sonido: sí</button>
+              </div>
+            </div>
+            <div class="canvas-wrap" id="canvasWrap"><canvas id="puzzleCanvas" tabindex="0" role="application" aria-label="Tablero del rompecabezas. Arrastra las piezas con el puntero o usa las flechas para mover la pieza seleccionada, Enter para colocarla, R para girarla y H para pedir una pista."></canvas><div class="canvas-hint" id="canvasHint">Arrastra las piezas hasta su lugar · flechas, Enter, R y H también funcionan</div></div>
+            <div class="board-footer"><div class="zoom-controls"><button id="zoomOut" aria-label="Alejar">−</button><span id="zoomLabel">100%</span><button id="zoomIn" aria-label="Acercar">+</button></div><div class="board-footer-actions"><button class="text-btn" id="resetBtn">Reiniciar partida</button><button class="text-btn danger" id="resetAllBtn">Restablecer Todo</button></div></div>
+          </section>
+          <aside class="panel game-side">
+            <div class="section-heading"><h3>Piezas disponibles</h3><span class="count-pill" id="trayCount">16</span></div>
+            <p class="muted">Selecciona una pieza y arrástrala al tablero. También puedes girarla con el botón correspondiente.</p>
+            <div class="mini-preview" id="miniPreview"><img id="referenceImage" alt="Imagen de referencia"></div>
+            <div class="game-tips"><strong>Consejo</strong><p>Empieza por las esquinas y los bordes. Usa la vista previa cuando necesites recordar la imagen original. Con el tablero enfocado: flechas para mover, Enter para soltar, R para girar y Esc para cerrar ventanas.</p></div>
+            <button class="secondary-btn full" id="saveExitBtn">Guardar y salir</button>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer" id="contacto">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="brand footer-lockup" href="#" aria-label="PuzzleMe inicio">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path d="M16 16h12v4a4 4 0 1 0 8 0v-4h8a4 4 0 0 1 4 4v8h-4a4 4 0 1 0 0 8h4v8a4 4 0 0 1-4 4h-8v-4a4 4 0 1 0-8 0v4H16a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="brand-name">PuzzleMe</span>
+        </a>
+        <p>Rompecabezas con tus fotografías. Sin cuentas, sin subir imágenes a ningún servidor.</p>
+        <p class="footer-credit">Un proyecto de JuanPancho's · Tehuacán, Puebla</p>
+      </div>
+      <nav class="footer-col" aria-label="Contacto">
+        <h2>Contacto</h2>
+        <a href="https://wa.me/522381501369" target="_blank" rel="noopener">WhatsApp 238 150 1369</a>
+        <a href="https://wa.me/522381271940" target="_blank" rel="noopener">WhatsApp 238 127 1940</a>
+        <a href="https://wa.me/522211959921" target="_blank" rel="noopener">WhatsApp 221 195 9921</a>
+        <a href="tel:+522381501369">Tel. 238 150 1369</a>
+        <a href="tel:+522211959921">Tel. 221 195 9921</a>
+      </nav>
+      <nav class="footer-col" aria-label="Redes sociales">
+        <h2>Redes</h2>
+        <a href="https://www.instagram.com/juanpanchos_tehuacan/" target="_blank" rel="noopener">Instagram @juanpanchos_tehuacan</a>
+        <a href="https://www.facebook.com/profile.php?id=61577993078029" target="_blank" rel="noopener">Facebook JuanPancho's</a>
+        <a href="https://resendiz1.github.io/juanpancho-s/" target="_blank" rel="noopener">Sitio de JuanPancho's</a>
+      </nav>
+      <div class="footer-col footer-shortcuts">
+        <h2>Atajos</h2>
+        <span>Flechas · mover</span>
+        <span>Enter · colocar</span>
+        <span>R · girar</span>
+        <span>H · pista</span>
+        <span>Esc · cerrar</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container footer-bottom-inner">
+        <span>© 2026 PuzzleMe · Hecho por JuanPancho's</span>
+        <span>Tehuacán, Puebla</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="modal-backdrop" id="profileModal"><section class="modal"><button class="modal-close" data-close aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>Tu perfil</h2><label class="field-label" for="playerName">Nombre de jugador</label><input id="playerName" maxlength="22" placeholder="Escribe tu nombre"><label class="field-label" for="playerAvatar">Inicial o símbolo</label><input id="playerAvatar" maxlength="2" placeholder="P"><div class="modal-actions"><button class="secondary-btn" data-close>Cancelar</button><button class="primary-btn" id="saveProfile">Guardar perfil</button></div></section></div>
+
+  <div class="modal-backdrop" id="previewModal"><section class="modal wide-modal"><button class="modal-close" data-close aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>Vista previa</h2><img class="preview-large" id="previewLarge" alt="Imagen original del rompecabezas"></section></div>
+
+  <div class="modal-backdrop" id="recordsModal"><section class="modal"><button class="modal-close" data-close aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>Todos tus récords</h2><div id="allRecordsList" class="record-list"></div><button class="text-btn danger" id="clearRecords">Borrar récords</button></section></div>
+
+  <div class="modal-backdrop" id="winModal"><section class="modal win-modal"><div class="win-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><h2>¡Lo lograste!</h2><p id="winMessage">Has completado tu rompecabezas.</p><div class="win-time"><span>Tu tiempo</span><strong id="winTime">00:00</strong></div><button class="primary-btn full" id="newPuzzleBtn">Crear otro rompecabezas</button></section></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
